@@ -1,12 +1,14 @@
 package com.example.demo.config;
 
+import com.example.demo.util.LoginInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 //跨域通用
 @Configuration
-public class CorsConfig implements WebMvcConfigurer {
+public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry){
@@ -16,5 +18,17 @@ public class CorsConfig implements WebMvcConfigurer {
                 .maxAge(168000)             //预检间隔时间
                 .allowedHeaders("*")        //允许头部设置
                 .allowCredentials(true);  //是否发送Cookie
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new LoginInterceptor()).excludePathPatterns(
+                "/user/land",
+                "/user/phone/code",
+                "/user/email/code",
+                "/playlist/*",
+                "/comment/*",
+                "/song/search"
+        );
     }
 }

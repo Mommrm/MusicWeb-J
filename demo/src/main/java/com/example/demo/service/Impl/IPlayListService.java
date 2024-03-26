@@ -9,6 +9,7 @@ import com.example.demo.mapper.SongMapper;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.service.PlayListService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
+@Service
 public class IPlayListService implements PlayListService {
     @Autowired
     private PlayListMapper playListMapper;
@@ -26,10 +27,10 @@ public class IPlayListService implements PlayListService {
     private UserMapper userMapper;
 
     @Override
-    public Result AddPlayList(String playlistId ,String playlistName, String userId  ) {
+    public Result AddUserPlayList(String playlistId ,String playlistName, String userId  ) {
         try{//playlistId需要经过处理
             playlistId = getMyPlaylistId(playlistId);
-            int insert_row = playListMapper.createPlaylist(playlistId,playlistName,userId);
+            int insert_row = playListMapper.createUPlaylist(playlistId,userId,playlistName);
             if(insert_row >= 1){
                 return Result.ok(true);
             }
@@ -88,11 +89,7 @@ public class IPlayListService implements PlayListService {
      */
     @Override
     public Result GetMyPlayList(String userId) {
-        ArrayList<PlayList> playLists = userMapper.getMyPlaylist(userId);
-        if (!playLists.isEmpty()) {
-            return Result.ok(playLists);
-        }
-        return Result.fail("歌单获取失败!");
+        return Result.fail("功能未完成");
     }
 
     /**
@@ -102,29 +99,7 @@ public class IPlayListService implements PlayListService {
      */
     @Override
     public Result AddSongToPlayList(songUser song) {
-        System.out.println(song);
-        try{
-            String PlaylistName = userMapper.getPlaylistName(song.getPlaylistID()); //通过歌单Id查询歌单名字
-            PlayList selectPlaylist = new PlayList(song.getPlaylistID(),song.getSongId(),PlaylistName);//被选择插入的歌单 ，临时变量
-            Song songAdd = new Song(); //创建添加的歌曲变量
-
-            songAdd.setSongName(song.getSongName());
-            songAdd.setSongId(song.getSongId());
-            songAdd.setSongUrl(song.getSongUrl());
-            songAdd.setSongSinger(song.getSongSinger());
-            songAdd.setPlaylistID(song.getPlaylistID());
-
-            int check = addSong(songAdd,selectPlaylist);
-            System.out.println("check: " + check);
-            if(check > 0){
-                return Result.ok(1);
-            }else{
-                return Result.ok(0);//未更新数据库
-            }
-        }catch (Exception e) {
-            System.out.println("异常: " + e);
-            return Result.fail("0");
-        }
+        return Result.fail("功能未完成");
     }
     @Transactional
     private int addSong(Song songAdd , PlayList selectPlaylist){

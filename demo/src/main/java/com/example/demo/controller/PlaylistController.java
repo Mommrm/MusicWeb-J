@@ -1,11 +1,10 @@
 package com.example.demo.controller;
 
 
-import com.example.demo.entity.PlayList;
 import com.example.demo.entity.Result;
-import com.example.demo.entity.Song;
 import com.example.demo.entity.songUser;
-import com.example.demo.service.PlayListService;
+import com.example.demo.service.Impl.IPlayListService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,13 +14,13 @@ import java.util.List;
 @CrossOrigin
 @RequestMapping("playlist")
 public class PlaylistController {
-    @Autowired
-    private PlayListService playListService;
+    @Resource
+    private IPlayListService playListService;
 
     @PostMapping("/addPlaylist")
     public Result createMyPlaylist(@RequestParam("playlistId") String playlistId , @RequestParam("playlistName") String playlistName
             , @RequestParam("userId") String userId ){
-        return playListService.AddPlayList(playlistId,playlistName,userId);
+        return playListService.AddUserPlayList(playlistId,playlistName,userId);
     }
 
     @PostMapping("/deletePlaylist")

@@ -4,9 +4,10 @@ package com.example.demo.controller;
 import com.example.demo.entity.Comment;
 import com.example.demo.entity.Result;
 import com.example.demo.entity.Song;
+import com.example.demo.service.Impl.ISongService;
 import com.example.demo.service.SongService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,8 +22,8 @@ import java.util.List;
 public class SongController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static String lyrics = "";
-    @Autowired
-    private SongService songService;
+    @Resource
+    private ISongService songService;
 
     @PostMapping("/getlyric")
     public Result getLyric(@RequestParam("songId") String songId) throws IOException {

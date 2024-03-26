@@ -1,13 +1,17 @@
 package com.example.demo.service;
 
+import com.example.demo.DTO.UserDTO;
 import com.example.demo.entity.Result;
 import com.example.demo.entity.User;
+import org.springframework.stereotype.Service;
+
 
 public interface UserService {
+    Result SentCode(String str);
 
-    public Result Land(User user);
+    Result Land(UserDTO user);
 
-    public Result Register(User user);
+    Result GetUserInfo(String token);
 
-    public Result GetUserInfo(String token);
+    Result UpdateUserInfo(User user);
 }

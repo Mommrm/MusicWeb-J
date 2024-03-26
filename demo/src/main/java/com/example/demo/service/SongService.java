@@ -3,6 +3,8 @@ package com.example.demo.service;
 import com.example.demo.entity.Comment;
 import com.example.demo.entity.Result;
 import com.example.demo.entity.Song;
+import org.springframework.stereotype.Service;
+
 
 public interface SongService {
 

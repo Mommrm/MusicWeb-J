@@ -27,6 +27,9 @@ public class SerchSongLogical {
                 + "&total=true&limit=20";
         URL Search = new URL(url);
         URLConnection conn = Search.openConnection();
+
+
+
         InputStream inputStream = conn.getInputStream();
         File songid = new File("songId.txt");
         FileOutputStream fs = new FileOutputStream(songid);

@@ -1,39 +1,33 @@
 package com.example.demo.mapper;
 
 
+import cn.hutool.core.date.DateTime;
+import com.example.demo.DTO.UserDTO;
 import com.example.demo.entity.PlayList;
 import com.example.demo.entity.User;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Mapper
-public interface UserMapper {
-    @Select("select userId from user")
-    public String[] findAllId();
+public interface UserMapper{
+    @Select("Select music_user_phone from music_user_info where music_user_phone = #{phone}")
+    String selectByPhone(String phone);
 
-    @Select("select userId from user where account = #{account} and password=#{password}")
-    public String findLandId(String account ,String password);
+    @Select("Select music_user_email from music_user_info where music_user_email = #{email}")
+    String selectByEmail(String email);
 
-    @Select("select userId , userName ,  account , password from user where userId = #{userId}")
-    public User findUser(String userId);
+    @Insert("Insert into music_user_info(music_user_id,music_user_name,music_user_phone,music_user_email,music_user_regisdate) values (#{userId},#{userName},#{phone}, #{email},#{now})")
+    Boolean createUser(String userId,String userName ,String phone, String email, DateTime now);
 
-    @Select("select userId,UserName,account,password from user where account = #{account} And password = #{password}")
-    public User Land(User user);
+    @Select("Select * from music_user_info where music_user_id = #{userId}")
+    User selectByUserId(String userId);
 
-    @Insert("insert into user(userId,userName,account,password) values (#{userId} , #{userName} , #{account} ,#{password}) ")
-    public int Register(User user);
-
-    @Select("select userName , account from user where userName = #{userName} And account = #{account}")
-    public List<User> isExistEqualUser(String userName ,String account);
-
-    @Select("select playlistId,playlistName,userId from up where userId = #{userId}")
-    public ArrayList<PlayList> getMyPlaylist(String UserId);
-
-    @Select("Select playlistName from up where playlistId = #{playlistId}")
-    public String getPlaylistName(String playlistId);
+    @Update("Update music_user_info set music_user_name = #{userName}, music_user_avatar = #{userAvatar} , music_user_brief = #{userBrief}")
+    boolean updateUserInfo(User user);
 
 }

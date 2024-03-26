@@ -1,128 +1,129 @@
 package com.example.demo.service.Impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.RandomUtil;
+import com.example.demo.DTO.UserDTO;
 import com.example.demo.entity.Result;
 import com.example.demo.entity.User;
 import com.example.demo.mapper.PlayListMapper;
 import com.example.demo.mapper.UserMapper;
-import com.example.demo.config.TokenGeneration;
 import com.example.demo.service.UserService;
+import com.example.demo.util.RedisConstants;
+import com.example.demo.util.RegexUtils;
 import io.jsonwebtoken.Jwts;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+@Service
 public class IUserService implements UserService {
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
     private UserMapper userMapper;
     @Autowired
     private PlayListMapper playListMapper;
-    private static String secret = "abcdfghiabcdfghiabcdfghiabcdfghi";
 
 
     @Override
-    public Result Land(User user) {
-        TokenGeneration tokenGeneration = new TokenGeneration();  //有关登录逻辑的实现
-        User userInfo = new User();
-
-        try{
-            User i = userMapper.Land(user);  //验证用户
-            if(i != null){
-                user.setUserId(userMapper.findLandId(user.getAccount(),user.getPassword()));
-
-                String token = tokenGeneration.GetToken(user.getUserId());
-                userInfo.setUserId(userMapper.Land(user).getUserId());
-                userInfo.setUserName(userMapper.Land(user).getUserName());
-                userInfo.setAccount(user.getAccount());
-                userInfo.setPassword(user.getPassword());
-                userInfo.setToken(token);
-
-                System.out.println(userInfo);
-                return Result.ok(userInfo);
-            }else{
-                return Result.fail("登录失败");
-            }
-        }catch(Exception e){
-            System.out.println(e);
-            return Result.fail("登录异常");
+    public Result SentCode(String str) {
+        // 生成验证码
+        String code = RandomUtil.randomNumbers(6);
+        System.out.println("验证码为: { " + code + " }");
+        // 保存验证码
+        stringRedisTemplate.opsForValue().set(RedisConstants.LOGIN_USER_CODE + str,code);
+        //是手机
+        if (RegexUtils.isPhoneInvalid(str)) {
+            // 发送验证码
+            System.out.println("验证码为: { " + code + " }");
         }
+        return Result.ok();
     }
 
     @Override
-    public Result Register(User user) {
-        String[] tempIDs = userMapper.findAllId();
-        user.setUserId(String.valueOf(tempIDs[tempIDs.length-1] + 1)); //获取当前最后一位用户ID 往后退一位赋予给新注册用户
-        //判断是否已经存在用户名和账号都相同的账户
-        if(!userMapper.isExistEqualUser(user.getUserName() , user.getAccount()).isEmpty()){
-            System.out.println("有用户");
-            return Result.fail("已经拥有重复用户");
+    public Result Land(UserDTO user) {
+        // 验证用户手机号 或 邮箱
+        String email = user.getUserEmail();
+        String phone = user.getUserPhone();
+        UserDTO userDTO = new UserDTO();
+        if (RegexUtils.isPhoneInvalid(phone)|| RegexUtils.isEmailInvalid(email)) {
+            return Result.fail("输入了错误的手机号或邮箱");
         }
-
-        //满足密码要求
-        if(Password_Check(user.getPassword())){
-            try{
-                if(addUser(user)){
-                    return Result.ok();
-                }
-                else {
-                    return Result.fail("注册失败");
-                }
-            }catch (Exception e){
-                return Result.fail("注册异常");
-            }
+        // 验证码校验
+        String cachePhoneCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + phone);
+        String cacheEmailCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + email);
+        String code = user.getCode();
+        if (!cachePhoneCode.equals(code) && !cacheEmailCode.equals(code)) {
+            return Result.fail("错误的验证码");
         }
-        return Result.fail("注册失败");
+        // 是否有此用户
+        userDTO.setUserPhone(userMapper.selectByPhone(phone));
+        userDTO.setUserEmail(userMapper.selectByEmail(email));
+        if (userDTO == null) {
+            // 没有，创建用户
+            addUser(userDTO);
+        }
+        // 保存用户到Redis
+        // 1. 生成token
+        String token = UUID.randomUUID().toString();
+        // 2. 保存用户
+        Map<String,Object> userMap = BeanUtil.beanToMap(userDTO,new HashMap<>(), CopyOptions.create()
+                .setIgnoreNullValue(true)
+                .setFieldValueEditor((fieldName,fieldValue) -> fieldValue.toString()));
+        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token,userMap);
+        // 3. 设置token过期时间
+        stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token,RedisConstants.LOGIN_USER_TTL ,TimeUnit.MINUTES);
+        return Result.ok();
     }
 
     @Override
-    public Result GetUserInfo(String token) {
-        User userInfo = decrypt(token);
-        if (userInfo != null) {
-            return Result.ok(userInfo);
+    public Result GetUserInfo(String userId) {
+        // TODO 获取用户信息
+        User user = userMapper.selectByUserId(userId);
+        if (user != null) {
+            return Result.ok(user);
         }
         return Result.fail("获取用户信息失败");
     }
 
-    //解密用户信息
-    private User decrypt(String token){
-        return userMapper.findUser(Jwts.parser()
-                .setSigningKey(secret)
-                .parseClaimsJws(token).
-                getBody().getSubject());
-    }
-    /**
-     * 校验密码
-     * @param password
-     * @return
-     */
-    private boolean Password_Check(String password){
-        int isEnglish = 0;//记录英文字符出现次数
-        if(password.length() < 8) //密码小于8位
-            return false;
-        for(int i = 0;i<password.length();i++){
-            char temp = password.charAt(i);
-            if((temp >= 65 && temp <= 90) || (temp >= 97 && temp <= 122)) {
-                isEnglish++;
-            }
+    @Override
+    public Result UpdateUserInfo(User user) {
+        boolean flag = userMapper.updateUserInfo(user);
+        if (flag) {
+            Result.ok();
         }
-        if(isEnglish < 2){ //英文字符少于两位
-            return false;
-        }
-        //其余情况均为符合密码要求
-        return true;
+        return Result.fail("更新失败");
     }
+
 
     /**
      * 创建用户并创建对应歌单
      * @param user
      * @return
      */
-    @Transactional
-    private boolean addUser(User user){
+    private boolean addUser(UserDTO user){
         try {
+            String phone = user.getUserPhone();
+            String email = user.getUserEmail();
+            String userId = "u-" + UUID.randomUUID().toString();
+            String playlistId = "p-" + UUID.randomUUID().toString();
+
+            String userName = "User-" + RandomUtil.randomString(10);
+            DateTime dateTime = DateTime.now();
             //添加用户
-            userMapper.Register(user);
+            userMapper.createUser(userId,userName,phone,email,dateTime);
             //创建默认歌单 默认的歌单号为用户Id
-            playListMapper.createPlaylist(user.getUserId(), user.getUserName() + "的歌单", user.getUserId() );
+            playListMapper.createPlaylist(playlistId, "我的歌单", dateTime);
+            playListMapper.createUPlaylist(userId,playlistId,"我的歌单");
         }catch (Exception e){
             System.out.println(e);
             return false;

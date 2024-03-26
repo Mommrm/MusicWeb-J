@@ -5,7 +5,9 @@ import com.example.demo.entity.Result;
 import com.example.demo.mapper.CommentMapper;
 import com.example.demo.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ICommentService implements CommentService {
     @Autowired
     private CommentMapper commentMapper;
