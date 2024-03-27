@@ -11,4 +11,11 @@ import lombok.NoArgsConstructor;
 public class UserDTO extends User {
 
     private String code;
+
+    @Override
+    public String toString() {
+        return super.toString() + "  UserDTO{" +
+                "code='" + code + '\'' +
+                '}';
+    }
 }

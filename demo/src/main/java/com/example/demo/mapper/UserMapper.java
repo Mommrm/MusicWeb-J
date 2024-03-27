@@ -15,14 +15,17 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper{
-    @Select("Select music_user_phone from music_user_info where music_user_phone = #{phone}")
-    String selectByPhone(String phone);
+    @Select("Select * from music_user_info where music_user_phone = #{phone}")
+    UserDTO selectByPhone(String phone);
 
-    @Select("Select music_user_email from music_user_info where music_user_email = #{email}")
-    String selectByEmail(String email);
+    @Select("Select * from music_user_info where music_user_email = #{email}")
+    UserDTO selectByEmail(String email);
 
-    @Insert("Insert into music_user_info(music_user_id,music_user_name,music_user_phone,music_user_email,music_user_regisdate) values (#{userId},#{userName},#{phone}, #{email},#{now})")
-    Boolean createUser(String userId,String userName ,String phone, String email, DateTime now);
+    @Insert("Insert into " +
+            "music_user_info(music_user_id,music_user_name,music_user_phone,music_user_email,music_user_regisdate) " +
+            "values " +
+            "(#{userId},#{userName},#{userPhone}, #{userEmail},#{userRegisterDate})")
+    Boolean createUser(UserDTO userDTO);
 
     @Select("Select * from music_user_info where music_user_id = #{userId}")
     User selectByUserId(String userId);

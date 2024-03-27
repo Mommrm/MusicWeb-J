@@ -32,54 +32,66 @@ public class IUserService implements UserService {
     private UserMapper userMapper;
     @Autowired
     private PlayListMapper playListMapper;
-
+    String cacheCode = "";
 
     @Override
     public Result SentCode(String str) {
         // 生成验证码
         String code = RandomUtil.randomNumbers(6);
-        System.out.println("验证码为: { " + code + " }");
         // 保存验证码
-        stringRedisTemplate.opsForValue().set(RedisConstants.LOGIN_USER_CODE + str,code);
-        //是手机
-        if (RegexUtils.isPhoneInvalid(str)) {
-            // 发送验证码
-            System.out.println("验证码为: { " + code + " }");
+        stringRedisTemplate.opsForValue().set(RedisConstants.LOGIN_USER_CODE + str,code,RedisConstants.LOGIN_CODE_TTL,TimeUnit.SECONDS);
+        //发送验证码
+        if (!RegexUtils.isPhoneInvalid(str)) {
+            //发往手机
+            System.out.println("手机验证码为: { " + code + " }");
+        }
+        if(!RegexUtils.isEmailInvalid(str)){
+            //发往邮箱
+            System.out.println("邮箱验证码为: { " + code + " }" + str);
         }
         return Result.ok();
     }
 
     @Override
     public Result Land(UserDTO user) {
+        boolean flag = true; //默认是邮箱
         // 验证用户手机号 或 邮箱
         String email = user.getUserEmail();
         String phone = user.getUserPhone();
         UserDTO userDTO = new UserDTO();
-        if (RegexUtils.isPhoneInvalid(phone)|| RegexUtils.isEmailInvalid(email)) {
-            return Result.fail("输入了错误的手机号或邮箱");
+        System.out.println("email: " + email + " phone: " + phone);
+        if (RegexUtils.isPhoneInvalid(phone) && email == null) {
+            return Result.fail("输入了错误的手机号");
+        }
+        if(RegexUtils.isPhoneInvalid(email) && phone == null){
+            return Result.fail("输入了错误的邮箱号");
         }
         // 验证码校验
-        String cachePhoneCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + phone);
-        String cacheEmailCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + email);
+        if (email == null) {
+            userDTO.setUserPhone(phone);
+            cacheCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + phone);
+        }
+
+        if(phone == null){
+            userDTO.setUserEmail(email);
+            cacheCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + email);
+        }
         String code = user.getCode();
-        if (!cachePhoneCode.equals(code) && !cacheEmailCode.equals(code)) {
+        if (!cacheCode.equals(code)) {
             return Result.fail("错误的验证码");
         }
         // 是否有此用户
-        userDTO.setUserPhone(userMapper.selectByPhone(phone));
-        userDTO.setUserEmail(userMapper.selectByEmail(email));
-        if (userDTO == null) {
+        if (userMapper.selectByEmail(email) == null && userMapper.selectByPhone(phone) == null) {
             // 没有，创建用户
-            addUser(userDTO);
+            userDTO = addUser(userDTO);
         }
+        System.out.println(userDTO);
         // 保存用户到Redis
         // 1. 生成token
         String token = UUID.randomUUID().toString();
         // 2. 保存用户
-        Map<String,Object> userMap = BeanUtil.beanToMap(userDTO,new HashMap<>(), CopyOptions.create()
-                .setIgnoreNullValue(true)
-                .setFieldValueEditor((fieldName,fieldValue) -> fieldValue.toString()));
-        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token,userMap);
+        Map<String,Object> userMap = BeanUtil.beanToMap(userDTO, String.valueOf(new HashMap<>())); //出错
+        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token,userMap); // TODO 没有正确缓存
         // 3. 设置token过期时间
         stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token,RedisConstants.LOGIN_USER_TTL ,TimeUnit.MINUTES);
         return Result.ok();
@@ -110,24 +122,26 @@ public class IUserService implements UserService {
      * @param user
      * @return
      */
-    private boolean addUser(UserDTO user){
+    private UserDTO addUser(UserDTO user){
+        UserDTO returnUserDTO = new UserDTO();
         try {
-            String phone = user.getUserPhone();
-            String email = user.getUserEmail();
-            String userId = "u-" + UUID.randomUUID().toString();
-            String playlistId = "p-" + UUID.randomUUID().toString();
+            DateTime now = DateTime.now();
+            returnUserDTO.setUserRegisterDate(now);
+            returnUserDTO.setUserPhone(user.getUserPhone());
+            returnUserDTO.setUserEmail(user.getUserEmail());
+            returnUserDTO.setUserId("u-" + UUID.randomUUID());
+            returnUserDTO.setUserName("User-" + RandomUtil.randomString(10));
 
-            String userName = "User-" + RandomUtil.randomString(10);
-            DateTime dateTime = DateTime.now();
+            String playlistId = "p-" + UUID.randomUUID().toString();
             //添加用户
-            userMapper.createUser(userId,userName,phone,email,dateTime);
+            userMapper.createUser(returnUserDTO);
             //创建默认歌单 默认的歌单号为用户Id
-            playListMapper.createPlaylist(playlistId, "我的歌单", dateTime);
-            playListMapper.createUPlaylist(userId,playlistId,"我的歌单");
+            playListMapper.createPlaylist(playlistId, "我的歌单", now);
+            playListMapper.createUPlaylist(returnUserDTO.getUserId(),playlistId,"我的歌单");
         }catch (Exception e){
             System.out.println(e);
-            return false;
+            return null;
         }
-        return true;
+        return returnUserDTO;
     }
 }
