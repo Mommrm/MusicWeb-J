@@ -8,8 +8,10 @@ import com.example.demo.mapper.CommentMapper;
 import com.example.demo.service.SongService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -83,10 +85,11 @@ public class ISongService implements SongService {
     }
 
     @Override
-    public Result SearchSong(Song song) throws Exception {
+    public Result SearchSong(String songName) throws Exception {
         List<Song> searchResult;
 
-        searchResult = SerchSongLogical.SearchMusic(song.getSongName());
+        searchResult = SerchSongLogical.SearchMusic(songName);
+
         if (!searchResult.isEmpty()) {
             return Result.ok(searchResult);
         }

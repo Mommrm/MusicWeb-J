@@ -14,5 +14,5 @@ public interface SongService {
 
     public Result UpdataCommentLikes(Comment comment);
 
-    public Result SearchSong(Song song) throws Exception;
+    public Result SearchSong(String songName) throws Exception;
 }

@@ -54,7 +54,7 @@ public class IUserService implements UserService {
 
     @Override
     public Result Land(UserDTO user) {
-        boolean flag = true; //默认是邮箱
+        String isPhoneOrEmail = "Phone";
         // 验证用户手机号 或 邮箱
         String email = user.getUserEmail();
         String phone = user.getUserPhone();
@@ -69,20 +69,32 @@ public class IUserService implements UserService {
         // 验证码校验
         if (email == null) {
             userDTO.setUserPhone(phone);
+            isPhoneOrEmail = "Phone";
             cacheCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + phone);
         }
 
         if(phone == null){
             userDTO.setUserEmail(email);
+            isPhoneOrEmail = "Email";
             cacheCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_USER_CODE + email);
         }
         String code = user.getCode();
         if (!cacheCode.equals(code)) {
             return Result.fail("错误的验证码");
         }
-        // 是否有此用户
-        if (userMapper.selectByEmail(email) == null && userMapper.selectByPhone(phone) == null) {
+        User phoneUser = userMapper.selectByPhone(phone);
+        User emailUser = userMapper.selectByEmail(email);
+        System.out.println("phoneUser: " + phoneUser + " emailUser: " + emailUser);
+        // 是否有此用户 输入的是手机号但是没有查询到该手机的用户
+        if (isPhoneOrEmail.equals("Phone") && phoneUser == null) {
             // 没有，创建用户
+            System.out.println("没有该手机用户,创建用户!");
+            userDTO = addUser(userDTO);
+        }
+        // 输入的是邮箱但是没有查询到该邮箱的用户
+        if (isPhoneOrEmail.equals("Email") && emailUser == null) {
+            // 没有，创建用户
+            System.out.println("没有该邮箱用户,创建用户!");
             userDTO = addUser(userDTO);
         }
         System.out.println(userDTO);
@@ -90,8 +102,8 @@ public class IUserService implements UserService {
         // 1. 生成token
         String token = UUID.randomUUID().toString();
         // 2. 保存用户
-        Map<String,Object> userMap = BeanUtil.beanToMap(userDTO, String.valueOf(new HashMap<>())); //出错
-        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token,userMap); // TODO 没有正确缓存
+        Map<String,Object> userMap = BeanUtil.beanToMap(userDTO, String.valueOf(new HashMap<>()));
+        stringRedisTemplate.opsForHash().putAll(RedisConstants.LOGIN_USER_KEY + token,userMap);
         // 3. 设置token过期时间
         stringRedisTemplate.expire(RedisConstants.LOGIN_USER_KEY + token,RedisConstants.LOGIN_USER_TTL ,TimeUnit.MINUTES);
         return Result.ok();
@@ -101,6 +113,7 @@ public class IUserService implements UserService {
     public Result GetUserInfo(String userId) {
         // TODO 获取用户信息
         User user = userMapper.selectByUserId(userId);
+        System.out.println(user);
         if (user != null) {
             return Result.ok(user);
         }

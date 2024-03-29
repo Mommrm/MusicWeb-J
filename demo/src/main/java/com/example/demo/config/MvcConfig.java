@@ -23,12 +23,10 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor()).excludePathPatterns(
-                "/user/land",
-                "/user/phone/code",
-                "/user/email/code",
+                "/user/**",
                 "/playlist/*",
                 "/comment/*",
-                "/song/search"
+                "/song/*"
         );
     }
 }

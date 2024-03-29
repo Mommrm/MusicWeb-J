@@ -1,0 +1,18 @@
+<!-- resources/mapper/UserMapper.xml -->
+<mapper namespace="com.example.mapper.UserMapper">
+    <select id="selectByUserId" resultType="com.example.demo.entity.User">
+        SELECT
+        music_user_id AS userId,
+        music_user_name AS userName,
+        music_user_phone AS userPhone,
+        music_user_email AS userEmail,
+        music_user_avatar AS userAvatar,
+        music_user_attnum AS userAttentionNum,
+        music_user_fannum AS userFanNum,
+        music_user_sex AS userSex,
+        music_user_brief AS userBrief,
+        music_user_regisdate AS userRegisterDate
+        FROM music_user_info
+        WHERE music_user_id = #{userId}
+    </select>
+</mapper>

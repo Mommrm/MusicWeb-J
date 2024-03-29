@@ -45,9 +45,9 @@ public class SongController {
         return songService.UpdataCommentLikes(comment);
     }
 
-    @PostMapping("/search")
+    @GetMapping("/search")
     //返回一组满足要求的Song对象
-    public Result searchSong(@RequestBody Song song) throws Exception {
-        return songService.SearchSong(song);
+    public Result searchSong(@RequestParam("songName") String songName) throws Exception {
+        return songService.SearchSong(songName);
     }
 }

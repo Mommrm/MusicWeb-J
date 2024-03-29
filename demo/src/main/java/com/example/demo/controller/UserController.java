@@ -31,13 +31,17 @@ public class UserController {
 
     @GetMapping("/land")
     public Result Land(@RequestBody UserDTO user) throws Exception{
+        System.out.println("controller -------------");
         return userService.Land(user);
     }
 
-    @PostMapping("/getUserInfo")
-    public Result ByUserIdGetInfo(@RequestParam String userId){
+    @GetMapping("/getUserInfo")
+    public Result ByUserIdGetInfo(@RequestParam("userId") String userId){
+        System.out.println(userId);
         return userService.GetUserInfo(userId);
     }
+
+
     @PostMapping("/updataInfo")
     public Result updataUserInfo(@RequestBody User user){
         return userService.UpdateUserInfo(user);

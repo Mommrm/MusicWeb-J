@@ -3,6 +3,7 @@ server:
 spring:
   application:
     name: demo
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/musicdatabase?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -10,7 +11,7 @@ spring:
     password: root
   data:
     redis:
-      host: 192.168.88.129
+      host: 192.168.88.130
       port: 6379
       password: 123321
       lettuce:
@@ -23,3 +24,6 @@ spring:
     default-property-inclusion: non_null # JSON?????????
 mybatis-plus:
   type-aliases-package: com.example.demo.entity # ?????
+  global-config:
+    db-config:
+      table-prefix: music_
